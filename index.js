@@ -47,8 +47,18 @@ const startX = 0;
 const startY = 0;
 
 function drawSnake() {
-    
+    let snakeOutline = 'white'; 
+    //false is black and red is true;
+    let filling = false;
+
     //iterate through the list drawing a rectangle and filling the rectangle    
+    while(node) {
+        ctx.fillStyle = filling ? 'red' : 'black'; 
+        filling = !filling;
+        ctx.fillStyle(node.x, node.y, squareSize, squareSize);
+        ctx.strokeStyle = 'white';
+        ctx.strokeRect(node.x, node.y, squareSize, squareSize);
+    }
 
 }
 
