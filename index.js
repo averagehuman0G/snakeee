@@ -1,3 +1,30 @@
+function SnakeNode(x, y) {
+    this.x = x;
+    this.y = y;
+    this.prev = null;
+    this.next = null;
+}
+
+function Snake(x, y) {
+    const newNode = new SnakeNode(x, y);
+    this.head = newNode;
+    this.tail = newNode;
+}
+
+Snake.prototype.addHead = function (x, y) {
+    const node = new SnakeNode(x, y);
+
+    node.next = this.head;
+    this.head.prev = node;
+    this.head = node;
+};
+
+Snake.prototype.removeTail = function () {
+    this.tail = this.tail.prev; 
+    this.tail.next = null;
+}
+
+
 //inital direction is right and will start at the top left
 let direction = 'R';
 let foodX = null;
@@ -35,33 +62,6 @@ function keyPressed(e) {
 
 document.addEventListener('keydown', keyPressed);
 
-function Snake(x, y) {
-    let snakeNode = new SnakeNode(x, y);
-    this.head = snakeNode;
-    this.tail = snakeNode;
-}
-
-function SnakeNode(x, y) {
-    this.x = x;
-    this.y = y;
-    this.next = null;
-    this.prev = null;
-}
-
-Snake.prototype.addHead = function (x, y) {
-    const nextElem = this.head;
-    const newHead = new SnakeNode(x, y);
-    this.head = newHead;
-    newHead.next = nextElem;
-    nextElem.prev = newHead;
-}
-
-Snake.prototype.removeTail = function () {
-    const oldTail = this.tail;
-    const newTail = oldTail.prev;
-    oldTail.prev = null;
-    this.tail = newTail;
-}
 
 function makeFood() {
     const randomX = Math.floor(Math.random() * squaresInGrid) * squareSize;    
@@ -75,61 +75,88 @@ function drawSquare(x, y) {
     ctx.strokeRect(x, y, squareSize, squareSize);
 }
 
-
-for(let i = 0; i < gridSize; i += squareSize) {
-    for(let j = 0; j < gridSize; j+= squareSize) {
-        drawSquare(i, j);
+function makeGrid() {
+    for(let i = 0; i < gridSize; i += squareSize) {
+        for(let j = 0; j < gridSize; j+= squareSize) {
+            drawSquare(i, j);
+        }
     }
 }
+
+makeGrid();
 makeFood();
 
 const startX = 0;
 const startY = 0;
 
 let snake = new Snake(startX, startY);
+let filling = false;
+
+function printSnakePart(x, y) {
+    ctx.fillStyle = filling ? 'red' : 'black'; 
+    filling = !filling;
+    ctx.fillRect(x, y, squareSize, squareSize);
+    ctx.strokeStyle = 'white';
+    ctx.strokeRect(x, y, squareSize, squareSize);
+}
+
 
 function drawSnake() {
-    let snakeOutline = 'white'; 
     //false is black and red is true;
-    let filling = false;
     let node = snake.head; 
-    //iterate through the list drawing a rectangle and filling the rectangle    
-    while(node) {
-        ctx.fillStyle = filling ? 'red' : 'black'; 
-        filling = !filling;
-        ctx.fillRect(node.x, node.y, squareSize, squareSize);
-        ctx.strokeStyle = 'white';
-        ctx.strokeRect(node.x, node.y, squareSize, squareSize);
-        node = node.next;
-    }
+
     let newX = snake.head.x; 
     let newY = snake.head.y;
-    console.log(direction);
+
     if(direction === "L") {
-        //add a new head going to the left
-        newX = snake.head.x - squareSize;
+        console.log('going left')
+        newX -= squareSize;
     } else if(direction === "U") {
-        newY = snake.head.y - squareSize;
+        console.log('going up')
+        newY -= squareSize;
     } else if(direction === "R") {
-        newX = snake.head.x + squareSize;
+        console.log('going right')
+        newX += squareSize;
     } else if(direction === "D") {
-        newY = snake.head.y + squareSize;
+        console.log('going down')
+        newY += squareSize;
     }
+
+
     let setKey = newX + ',' + newY;
     if(!valid(newX, newY) || snakePoints.has(setKey)) {
         //if we hit the outside or ourselves then gameover
         gameOver();    
     }
+
+    printSnakePart(newX, newY);
+    
     //if we eat the food then grow otherwise just move
     if(foodX === newX && foodY === newY) {
         //just add to the head of the snake;
         snake.addHead(newX, newY);
+        snakePoints.add(setKey);
+        //make new food
+        makeFood();
     } else {
-        //remove the tail from the snake
+        
+        const tailX = snake.tail.x;
+        const tailY = snake.tail.y;
+        const tailKey = tailX + ',' + tailY;
+
+        snakePoints.add(setKey);
+        snakePoints.delete(tailKey);
+
         snake.addHead(newX, newY);
         snake.removeTail();
+        ctx.fillStyle = 'white';
+        ctx.fillRect(tailX, tailY, squareSize, squareSize);
+        ctx.strokeStyle = 'black';
+        drawSquare(tailX, tailY);
+        
+        //remove the tail from the snake
     }
-    snakePoints.add(setKey);
+    
 }
 
 let game = setInterval(drawSnake, 100);
