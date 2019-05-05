@@ -1,35 +1,30 @@
-function SnakeNode(x, y) {
-    this.x = x;
-    this.y = y;
-    this.prev = null;
-    this.next = null;
-}
+//Things to work on:
+//food that doesn't spawn on the snake
+//print "game over on the board"
+//mobile friendly
 
-function Snake(x, y) {
-    const newNode = new SnakeNode(x, y);
-    this.head = newNode;
-    this.tail = newNode;
-}
+const startX = 0;
+const startY = 0;
 
-Snake.prototype.addHead = function (x, y) {
-    const node = new SnakeNode(x, y);
-
-    node.next = this.head;
-    this.head.prev = node;
-    this.head = node;
-};
-
-Snake.prototype.removeTail = function () {
-    this.tail = this.tail.prev; 
-    this.tail.next = null;
-}
-
+let direction;
+let foodX;
+let foodY;
+let snakePoints;
+let snake;
+let filling;
 
 //inital direction is right and will start at the top left
-let direction = 'R';
-let foodX = null;
-let foodY = null;
-let snakePoints = new Set();
+function newGame() {
+    makeGrid();
+    makeFood();
+    direction = 'R';
+    snakePoints = new Set();
+    snake = new Snake(startX, startY);
+    filling = false;
+    //always draw out a snake head at the beggining of the game
+    ctx.fillStyle = 'red';
+    ctx.fillRect(0, 0, squareSize, squareSize);
+}
 
 const canvas = document.getElementById('snake-canvas');
 const ctx = canvas.getContext('2d');
@@ -41,10 +36,11 @@ const squaresInGrid = gridSize / squareSize;
 const pinUrl = 'pin.png';
 const pin = new Image();
 
-pin.onload = function () {
-    makeFood();
-}
 pin.src = pinUrl;
+pin.onload = function () {
+    newGame();
+}
+
 
 
 function keyPressed(e) {
@@ -64,14 +60,15 @@ document.addEventListener('keydown', keyPressed);
 
 
 function makeFood() {
-    const randomX = Math.floor(Math.random() * squaresInGrid) * squareSize;    
-    const randomY = Math.floor(Math.random() * squaresInGrid) * squareSize;
-    foodX = randomX;
-    foodY = randomY;
-    ctx.drawImage(pin, randomX, randomY);
+    foodX = Math.floor(Math.random() * squaresInGrid) * squareSize;    
+    foodY = Math.floor(Math.random() * squaresInGrid) * squareSize;
+    ctx.drawImage(pin, foodX, foodY);
 }
 
 function drawSquare(x, y) {
+    ctx.fillStyle = 'white';
+    ctx.fillRect(x, y, squareSize, squareSize);
+    ctx.strokeStyle = 'black';
     ctx.strokeRect(x, y, squareSize, squareSize);
 }
 
@@ -83,14 +80,6 @@ function makeGrid() {
     }
 }
 
-makeGrid();
-makeFood();
-
-const startX = 0;
-const startY = 0;
-
-let snake = new Snake(startX, startY);
-let filling = false;
 
 function printSnakePart(x, y) {
     ctx.fillStyle = filling ? 'red' : 'black'; 
@@ -98,68 +87,67 @@ function printSnakePart(x, y) {
     ctx.fillRect(x, y, squareSize, squareSize);
     ctx.strokeStyle = 'white';
     ctx.strokeRect(x, y, squareSize, squareSize);
+    //debugger;
 }
 
 
 function drawSnake() {
-    //false is black and red is true;
-    let node = snake.head; 
+    //we have printed the entire snake
+        //all we need to do is before you print the new head
+        //check if it is valid
+        //if it is then print it
+            //check if we ate the food or we didn't
+        //if it isn't then game over
 
     let newX = snake.head.x; 
     let newY = snake.head.y;
 
+    
+    //then build and attach the new head
+
     if(direction === "L") {
-        console.log('going left')
         newX -= squareSize;
     } else if(direction === "U") {
-        console.log('going up')
         newY -= squareSize;
     } else if(direction === "R") {
-        console.log('going right')
         newX += squareSize;
     } else if(direction === "D") {
-        console.log('going down')
         newY += squareSize;
     }
 
+    let headKey = newX + ',' + newY;
 
-    let setKey = newX + ',' + newY;
-    if(!valid(newX, newY) || snakePoints.has(setKey)) {
-        //if we hit the outside or ourselves then gameover
+    if(!valid(newX, newY) || snakePoints.has(headKey)) {
         gameOver();    
-    }
-
-    printSnakePart(newX, newY);
-    
-    //if we eat the food then grow otherwise just move
-    if(foodX === newX && foodY === newY) {
-        //just add to the head of the snake;
-        snake.addHead(newX, newY);
-        snakePoints.add(setKey);
-        //make new food
-        makeFood();
     } else {
-        
-        const tailX = snake.tail.x;
-        const tailY = snake.tail.y;
-        const tailKey = tailX + ',' + tailY;
-
-        snakePoints.add(setKey);
-        snakePoints.delete(tailKey);
-
+        printSnakePart(newX, newY);
+        snakePoints.add(headKey);
         snake.addHead(newX, newY);
-        snake.removeTail();
-        ctx.fillStyle = 'white';
-        ctx.fillRect(tailX, tailY, squareSize, squareSize);
-        ctx.strokeStyle = 'black';
-        drawSquare(tailX, tailY);
-        
-        //remove the tail from the snake
+        //if we eat the food then grow otherwise just move
+        if(foodX === newX && foodY === newY) {
+            //just add to the head of the snake;
+            //make new food
+            makeFood();
+        } else {
+            const tailX = snake.tail.x;
+            const tailY = snake.tail.y;
+            const tailKey = tailX + ',' + tailY;
+
+            snakePoints.delete(tailKey);
+            snake.removeTail();
+            //empty's out the previous grid with the drawing of the snake
+            drawSquare(tailX, tailY);
+        }
     }
-    
+
 }
 
-let game = setInterval(drawSnake, 100);
+const restartBtn = document.getElementById('restart');
+
+restartBtn.addEventListener('click', function () {
+    newGame();
+    game = setInterval(drawSnake, 150);
+});
 
 function gameOver() {
     clearInterval(game);
@@ -168,3 +156,5 @@ function gameOver() {
 function valid(x, y) {
     return x >= 0 && x < gridSize && x % squareSize === 0 && y >= 0 && y < gridSize && y % squareSize === 0;
 }
+
+let game = setInterval(drawSnake, 150);
