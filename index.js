@@ -150,6 +150,10 @@ restartBtn.addEventListener('click', function () {
 });
 
 function gameOver() {
+    ctx.font = "50px Arial";
+    ctx.fillStyle = "Blue";
+    ctx.textAlign = "center";
+    ctx.fillText("GAME OVER", canvas.width / 4, canvas.height / 4);
     clearInterval(game);
 }
 
